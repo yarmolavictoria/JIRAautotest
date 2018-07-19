@@ -1,35 +1,28 @@
 package hillelauto.jira;
-
-import com.sun.glass.events.KeyEvent;
-import org.junit.runner.Request;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
-import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
-
 import hillelauto.WebDriverTestBase;
-
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-
-import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+
 
 public class JiraTests extends WebDriverTestBase {
     private LoginPage loginPage;
     private IssuePage issuePage;
     private String expectedMD5;
+    private CreateUser createUser;
 
     @BeforeClass(alwaysRun = true)
     public void initPages() throws IOException {
         loginPage = PageFactory.initElements(browser, LoginPage.class);
         issuePage = PageFactory.initElements(browser, IssuePage.class);
-        System.out.println("Jira Pages Initialized");
+        createUser = PageFactory.initElements(browser, CreateUser.class);
         expectedMD5 = calculateHash(JiraVars.attachmentFileLocation + JiraVars.attachmentFileName);
     }
 
@@ -40,7 +33,7 @@ public class JiraTests extends WebDriverTestBase {
         return expectedMD5;
     }
 
-    @Test(description = "1. Invalid Login", priority = -1)
+    @Test(description = "1. Invalid Login", priority = -1, groups = { "Sanity" })
     public void failureLogin() {
         loginPage.failureLogin();
     }
@@ -60,20 +53,20 @@ public class JiraTests extends WebDriverTestBase {
         issuePage.openIssue();
     }
 
-    @Test(description = "5. Uplaod Attachment", dependsOnMethods = { "openIssue" }, groups = { "Issues.Attachments" })
+    @Test(description = "5. Uplaod Attachment", dependsOnMethods = { "openIssue" }, groups = {"Sanity", "Issues.Attachments" })
     public void uploadAttachment() {
         issuePage.uploadAttachment();
     }
 
-    @Test(description = "Download Attachment", dependsOnMethods = { "uploadAttachment" }, groups = {
-            "Issues.Attachments", "disabled" })
+    @Test(description = "6. Download Attachment",dependsOnMethods = { "uploadAttachment" }, groups = {"Sanity","Issues.Attachments" })
     public void downloadAttachment() throws IOException {
         issuePage.downloadAttachment();
         String resultMD5 = calculateHash(JiraVars.downloadFileLocation + JiraVars.attachmentFileName);
-        assertEquals(resultMD5,expectedMD5);
-        //  browser.get(JiraVars.downloads);
-        //Assert.assertTrue(browser.findElement(By.id("title-area")).equals(JiraVars.attachmentFileName));
-
+        assertEquals(resultMD5, expectedMD5);
     }
-
+    @Test(description = "7. Create New User", dependsOnMethods = { "downloadAttachment" }, groups = {"Sanity","Issues.Attachments", })
+    public void createUser () throws IOException, InterruptedException {
+        createUser.createUsers();
+    }
 }
+
